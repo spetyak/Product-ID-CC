@@ -1,3 +1,8 @@
+"""
+Author: Sean Petyak
+Last Updated: 2/22/2026
+"""
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from time import sleep
