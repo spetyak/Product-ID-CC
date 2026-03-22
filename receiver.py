@@ -27,47 +27,67 @@ def decode(productID):
 
 def main():
 
-    scraped_links = []
+    last_links = []
 
     options = webdriver.ChromeOptions()
     options.add_argument("--log-level=3")
     driver = webdriver.Chrome(options=options)
 
     driver.get("https://store.steampowered.com/wishlist/id/jd-pidcc/") # Open Steam login page
+    sleep(2) # wait for page to fully load
 
     # https://stackoverflow.com/questions/60097388/scraping-problem-inspect-element-different-from-view-page-source#:~:text=The%20page%20content%20is%20probably,render%20the%20javascript%20for%20you.
 
-    
-    sleep(2) # wait for page to fully load
+    while True:
 
-    elements = driver.find_elements(By.TAG_NAME, "a")
-    for link in elements:
-       
-        href_value = link.get_attribute("href")
+        
 
-        if href_value \
-        and "app" in href_value \
-        and href_value not in scraped_links:
-            scraped_links.append(href_value)
+        scraped_links = []
 
-    print("Scraped links:")
-    for link in scraped_links:
-        print(link)
+        elements = driver.find_elements(By.TAG_NAME, "a")
+        for link in elements:
+        
+            href_value = link.get_attribute("href")
 
-    readList = []
+            if href_value \
+            and "app" in href_value \
+            and href_value not in scraped_links:
+                scraped_links.append(href_value)
 
-    print("Scraped IDs:")
-    for link in scraped_links:
-        match = re.search("/(\\d+)/", link)
-        readList.append(match.group(1))
-        print(match.group(1))
+        print(f"Checking... [{len(scraped_links) < 8} and {scraped_links == last_links}]")
 
-    char = 0
-    for i in range(len(readList)): # should be length 8
+        if (len(scraped_links) < 8) or (scraped_links == last_links):
+            sleep(8)
+            driver.refresh()
+            sleep(2)
+            continue
 
-        char |= decode(readList[i]) << i
-    
-    print(f"Output: {chr(char)}")
+        # print("Scraped links:")
+        # for link in scraped_links:
+        #     print(link)
+
+        readList = []
+
+        # print("Scraped IDs:")
+        for link in scraped_links:
+            match = re.search("/(\\d+)/", link)
+            readList.append(match.group(1))
+            # print(match.group(1))
+
+        char = 0
+        for i in range(8): # will always check first 8, so sender can add some random cover items
+
+            char |= decode(readList[i]) << i
+
+        if chr(char) == '':
+            break
+        
+        print(f"Output: {chr(char)}")
+
+        last_links = scraped_links.copy()
+
+        driver.refresh()
+        sleep(2)
 
     return
 

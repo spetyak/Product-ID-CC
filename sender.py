@@ -130,7 +130,7 @@ def add(gameList):
 
         driver.get(game)
 
-        sleep(3) # Sleeping to allow all page elements to load, may be able to reduce or eliminate later
+        sleep(2) # Sleeping to allow all page elements to load, may be able to reduce or eliminate later
 
         # ADD GAME TO WISHLIST
         try:
@@ -259,13 +259,40 @@ def main():
         # ADD NEW GAMES TO WISHLIST
         add(addList)
 
-        # sleep(30)
-        print(f"Sent \"{char}\", press enter to continue.")
-        userInput = input()
+        sleep(20)
+        # print(f"Sent \"{char}\", press enter to continue.")
+        # userInput = input()
 
         char = f.read(1)
 
-    
+
+
+    removeAll()
+
+    # send null byte to communicate no longer transmitting
+    addList = []
+    zeroUsedList = [False for i in range(len(zeroList))]
+    for i in range(8):
+
+        currentBit = (binary & (1 << i)) >> i
+
+        if currentBit == 0:
+
+            while True:
+
+                index = random.randint(0, len(zeroList)-1)  # select random game from zero list
+
+                if zeroUsedList[index] == True: # check if game has been used in this message yet
+                    continue
+
+                else: # if ok, add game and mark as used for this transmission
+
+                    addList.append(zeroList[index])
+                    print(f"0. Adding {zeroList[index]} to the list")
+                    zeroUsedList[index] = True
+                    break
+
+    add(addList)
 
     print("Finished main loop actions, log out and then use ^C to end process.")
 
