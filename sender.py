@@ -259,7 +259,7 @@ def main():
         # ADD NEW GAMES TO WISHLIST
         add(addList)
 
-        sleep(20)
+        sleep(40)
         # print(f"Sent \"{char}\", press enter to continue.")
         # userInput = input()
 

@@ -33,14 +33,12 @@ def main():
     options.add_argument("--log-level=3")
     driver = webdriver.Chrome(options=options)
 
-    driver.get("https://store.steampowered.com/wishlist/id/jd-pidcc/") # Open Steam login page
-    sleep(2) # wait for page to fully load
-
     # https://stackoverflow.com/questions/60097388/scraping-problem-inspect-element-different-from-view-page-source#:~:text=The%20page%20content%20is%20probably,render%20the%20javascript%20for%20you.
 
     while True:
 
-        
+        driver.get("https://store.steampowered.com/wishlist/id/jd-pidcc/") # Open Steam login page
+        sleep(10) # wait for page to fully load
 
         scraped_links = []
 
@@ -57,9 +55,7 @@ def main():
         print(f"Checking... [{len(scraped_links) < 8} and {scraped_links == last_links}]")
 
         if (len(scraped_links) < 8) or (scraped_links == last_links):
-            sleep(8)
-            driver.refresh()
-            sleep(2)
+            sleep(10)
             continue
 
         # print("Scraped links:")
@@ -86,8 +82,7 @@ def main():
 
         last_links = scraped_links.copy()
 
-        driver.refresh()
-        sleep(2)
+        sleep(10)
 
     return
 
