@@ -10,6 +10,21 @@ from selenium.webdriver.common.by import By
 import re
 from time import sleep
 
+def getCharLSBBitVal(string, index):
+
+    if index >= len(string): # if id too short, treat missing indices as 0
+        return 0
+    
+    return int(string[index]) & 1
+
+def decode(productID):
+
+    productIDrev = productID[::-1] # reverse to have indexing work from right to left <--
+
+    return getCharLSBBitVal(productIDrev, 1) ^ getCharLSBBitVal(productIDrev, 3) ^ getCharLSBBitVal(productIDrev, 5)
+
+
+
 def main():
 
     scraped_links = []
@@ -23,7 +38,7 @@ def main():
     # https://stackoverflow.com/questions/60097388/scraping-problem-inspect-element-different-from-view-page-source#:~:text=The%20page%20content%20is%20probably,render%20the%20javascript%20for%20you.
 
     
-    sleep(10) # wait for page to fully load
+    sleep(2) # wait for page to fully load
 
     elements = driver.find_elements(By.TAG_NAME, "a")
     for link in elements:
@@ -39,20 +54,20 @@ def main():
     for link in scraped_links:
         print(link)
 
+    readList = []
+
     print("Scraped IDs:")
     for link in scraped_links:
         match = re.search("/(\\d+)/", link)
+        readList.append(match.group(1))
         print(match.group(1))
 
-    # Stay on this page until the user sends a ^C signal to this script
-    # !!! Delete this later, just for early testing. !!!
-    # try: 
-    #     while True:
-    #         sleep(1)
+    char = 0
+    for i in range(len(readList)): # should be length 8
 
-    # except KeyboardInterrupt:
-    #     driver.quit()
-    #     exit(0)
+        char |= decode(readList[i]) << i
+    
+    print(f"Output: {chr(char)}")
 
     return
 
