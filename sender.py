@@ -1,15 +1,15 @@
 """
 Author: Sean Petyak
-Last Updated: 2/22/2026
+Last Updated: 3/28/2026
 """
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
-from time import sleep
-import sys
-import re
 import random
+import re
+import sys
+from time import sleep
 
 # globals
 driver = None
@@ -18,10 +18,10 @@ driver = None
 
 def getGames():
     """
-    Description
+    Creates a list of Steam game links from a file containing the links named "game_links".
 
     Returns:
-        _type_: _description_
+        list[str]: A list of Steam game link strings
     """
 
     f = None
@@ -41,38 +41,75 @@ def getGames():
     
     gameList = []
     for line in f:
-        gameList.append(line.strip())
+        gameList.append(line.strip()) # add game link string to list, remove newline from end
     f.close()
     return gameList
 
 
 
 def getCharLSBBitVal(string, index):
+    """
+    Returns the least significant bit value of a character at a given index in a string.
 
-    if index >= len(string): # if id too short, treat missing indices as 0
+    Args:
+        string (str): A string representing a product ID
+        index (int): The index of the string character of interest
+
+    Returns:
+        int: The value of the least significant bit of the targeted characters
+    """
+
+    if index >= len(string): # if ID too short, treat missing indices as 0
         return 0
     
     return int(string[index]) & 1
 
+
+
 def encode(productID):
+    """
+    Encodes a given product ID into a 0 or 1 by XORing the LSB of key characters 
+    (1st, 3rd, and 5th rightmost characters).
+
+    Args:
+        productID (str): A string representing a product ID
+
+    Returns:
+        int: A 0 or 1 determined by the LSB of key characters in the product ID
+    """
 
     productIDrev = productID[::-1] # reverse to have indexing work from right to left <--
 
-    return getCharLSBBitVal(productIDrev, 1) ^ getCharLSBBitVal(productIDrev, 3) ^ getCharLSBBitVal(productIDrev, 5)
+    return getCharLSBBitVal(productIDrev, 1) \
+            ^ getCharLSBBitVal(productIDrev, 3) \
+            ^ getCharLSBBitVal(productIDrev, 5)
 
 
 
 def splitList(idList):
+    """
+    Takes a given list of product ID links, extracts the product IDs, encodes the ID, and sorts 
+    product links into a list of IDs that resolve to 0 or a list of IDs that resolve to 1.
+
+    Args:
+        idList (list[str]): A list of ALL product IDs to be used for encoding
+
+    Returns:
+        tuple(list[str], list[str]): A tuple containing:
+            zeroList: A list of product links that resolve to 0 when encoded
+            oneList: A list of product links that resolve to 1 when encoded
+    """
 
     zeroList = []
     oneList = []
 
     for link in idList:
 
-        match = re.search("/(\\d+)/", link)
-        productID = match.group(1)
-        encoded = encode(productID)
+        match = re.search("/(\\d+)/", link) # search the string for just digits surrounded by "/"
+        productID = match.group(1)          # get the first occurence of identified digits
+        encoded = encode(productID)         # encode the product ID string
 
+        # sort the products based on their ID encodings
         if encoded == 0:
             zeroList.append(link)
         else:
@@ -84,27 +121,30 @@ def splitList(idList):
 
 def removeAll():
     """
-    Description
+    Removes all current wishlist items from the public wishlist.
     """
 
     global driver
 
+
+
     # confirm on wishlist page
     if "wishlist" not in driver.current_url:
-        # redirect to wishlist page
-        driver.get("https://store.steampowered.com/wishlist/id/jd-pidcc/")
+        
+        driver.get("https://store.steampowered.com/wishlist/id/jd-pidcc/") # go to wishlist page
         sleep(2) # allow page to load
 
-    # look for all button objects with text "remove"
-    # L click on remove button
-    # L wait a moment and repeat (0.1s maybe?)
+    
+    
+    # REMOVE GAMES FROM WISHLIST
     try:
+
         while True:
 
-            element = driver.find_element(By.XPATH, "//button[text()='remove']")
-            mouse = webdriver.ActionChains(driver) # can be moved elsewhere to avoid repetition
-            mouse.click(element).perform()
-            sleep(random.uniform(0.5, 1.5))
+            element = driver.find_element(By.XPATH, "//button[text()='remove']") # look for a button object with text "remove"
+            mouse = webdriver.ActionChains(driver)  # can be moved elsewhere to avoid repetition
+            mouse.click(element).perform()          # click on wishlist item remove button
+            sleep(random.uniform(0.5, 1.5))         # wait a moment and repeat
 
     except NoSuchElementException:
         print("All previous wishlist entries successfully removed.")
@@ -116,10 +156,10 @@ def removeAll():
 
 def add(gameList):
     """
-    Description
+    Add the given list of Steam games to the user's public wishlist.
 
     Args:
-        gameList (_type_): _description_
+        gameList (list[str]): A list of Steam game link strings
     """
 
     global driver
@@ -128,21 +168,20 @@ def add(gameList):
 
     for game in gameList:
 
-        driver.get(game)
-
-        sleep(random.randint(2, 5)) # Sleeping to allow all page elements to load, may be able to reduce or eliminate later
+        driver.get(game)            # go to game page using current link
+        sleep(random.randint(2, 5)) # sleep to allow page elements to load, may reduce later
 
         # ADD GAME TO WISHLIST
         try:
             
-            s = driver.find_element(By.XPATH, '//*[@id="add_to_wishlist_area"]')
-            a = webdriver.ActionChains(driver)
-            a.click(s).perform()
+            s = driver.find_element(By.XPATH, '//*[@id="add_to_wishlist_area"]') # look for the "add to wishlist" page element
+            a = webdriver.ActionChains(driver)  # can be moved elsewhere to avoid repetition
+            a.click(s).perform()                # click on wishlist item remove button
 
         except NoSuchElementException:
 
             print("Handing control back to user to troubleshoot, press enter when done")
-            userInput = input()
+            userInput = input() 
             continue
 
     return
@@ -155,11 +194,19 @@ def main():
 
 
 
-    f = None
+    if (len(sys.argv) != 2): # ensure caller uses proper calling format
+
+        print(
+            f"ERROR:\n" \
+            "\tPlease call this program using the following format:\n" \
+            "\tpython sender.py <input file path>\n"
+        )
+
+    inputMessageFile = None
 
     try:
 
-        f = open(sys.argv[1], "r")
+        inputMessageFile = open(sys.argv[1], "r")
 
     except Exception:
 
@@ -170,19 +217,22 @@ def main():
         )
         exit(0)
 
+
+
     # Setup Selenium webdriver to use Google Chrome browser
-    # Only display logs related to fatal errors, limit all other logs that are output
     options = webdriver.ChromeOptions()
-    options.add_argument("--log-level=3")
-    options.add_argument("--start-maximized")
+    options.add_argument("--log-level=3")   # only display logs related to fatal errors
+    options.add_argument("--start-maximized")   # start with browser window maximized (more real)
     # options.add_argument("user-data-dir=./chrome_profile")
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         " AppleWebKit/537.36 (KHTML, like Gecko)"
         " Chrome/146.0.0.0 Safari/537.36"
-    )
+    ) # use realistic user agent
     driver = webdriver.Chrome(options=options)
+
+
 
     driver.get("https://store.steampowered.com/login/") # Open Steam login page
 
@@ -196,20 +246,17 @@ def main():
 
 
 
-    gameList = getGames()
-    zeroList, oneList = splitList(gameList)
-    addList = []
-
     # ==========================================================================================
     #
     # ENTER MAIN SENDER LOOP
     #
-    # TODO: Repeatedly add various games to account wishlist via their URLs. Determine exact
-    # method of encoding to determine which URLs to choose. 
-    #
     # ==========================================================================================
 
-    char = f.read(1)
+    gameList = getGames()
+    zeroList, oneList = splitList(gameList)
+    addList = []
+
+    char = inputMessageFile.read(1)
     while char != '':
 
         print(f"Sending \"{char}\"")
@@ -228,7 +275,7 @@ def main():
         # PREPARE NEW GAMES FOR WISHLIST
         for i in range(8):
 
-            currentBit = (binary & (1 << i)) >> i
+            currentBit = (binary & (1 << i)) >> i # get ith bit from binary of current char
 
             if currentBit == 0:
 
@@ -236,7 +283,7 @@ def main():
 
                     index = random.randint(0, len(zeroList)-1)  # select random game from zero list
 
-                    if zeroUsedList[index] == True: # check if game has been used in this message yet
+                    if zeroUsedList[index] == True: # check if game was used in this message yet
                         continue
 
                     else: # if ok, add game and mark as used for this transmission
@@ -254,7 +301,7 @@ def main():
 
                     index = random.randint(0, len(oneList)-1)  # select random game from one list
 
-                    if oneUsedList[index] == True: # check if game has been used in this message yet
+                    if oneUsedList[index] == True: # check if game was used in this message yet
                         continue
 
                     else: # if ok, add game and mark as used for this transmission
@@ -268,13 +315,12 @@ def main():
         add(addList)
 
         sleep(60)
-        # print(f"Sent \"{char}\", press enter to continue.")
-        # userInput = input()
 
-        char = f.read(1)
+        char = inputMessageFile.read(1)
 
 
 
+    inputMessageFile.close()
     removeAll()
 
     # send null byte to communicate no longer transmitting
@@ -297,6 +343,8 @@ def main():
                 break
 
     add(addList)
+
+
 
     print("Finished main loop actions, log out and then use ^C to end process.")
 
