@@ -104,7 +104,7 @@ def removeAll():
             element = driver.find_element(By.XPATH, "//button[text()='remove']")
             mouse = webdriver.ActionChains(driver) # can be moved elsewhere to avoid repetition
             mouse.click(element).perform()
-            sleep(0.5)
+            sleep(random.uniform(0.5, 1.5))
 
     except NoSuchElementException:
         print("All previous wishlist entries successfully removed.")
@@ -130,7 +130,7 @@ def add(gameList):
 
         driver.get(game)
 
-        sleep(2) # Sleeping to allow all page elements to load, may be able to reduce or eliminate later
+        sleep(random.randint(2, 5)) # Sleeping to allow all page elements to load, may be able to reduce or eliminate later
 
         # ADD GAME TO WISHLIST
         try:
@@ -174,6 +174,14 @@ def main():
     # Only display logs related to fatal errors, limit all other logs that are output
     options = webdriver.ChromeOptions()
     options.add_argument("--log-level=3")
+    options.add_argument("--start-maximized")
+    # options.add_argument("user-data-dir=./chrome_profile")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        " AppleWebKit/537.36 (KHTML, like Gecko)"
+        " Chrome/146.0.0.0 Safari/537.36"
+    )
     driver = webdriver.Chrome(options=options)
 
     driver.get("https://store.steampowered.com/login/") # Open Steam login page
@@ -259,7 +267,7 @@ def main():
         # ADD NEW GAMES TO WISHLIST
         add(addList)
 
-        sleep(40)
+        sleep(60)
         # print(f"Sent \"{char}\", press enter to continue.")
         # userInput = input()
 
@@ -274,23 +282,19 @@ def main():
     zeroUsedList = [False for i in range(len(zeroList))]
     for i in range(8):
 
-        currentBit = (binary & (1 << i)) >> i
+        while True:
 
-        if currentBit == 0:
+            index = random.randint(0, len(zeroList)-1)  # select random game from zero list
 
-            while True:
+            if zeroUsedList[index] == True: # check if game has been used in this message yet
+                continue
 
-                index = random.randint(0, len(zeroList)-1)  # select random game from zero list
+            else: # if ok, add game and mark as used for this transmission
 
-                if zeroUsedList[index] == True: # check if game has been used in this message yet
-                    continue
-
-                else: # if ok, add game and mark as used for this transmission
-
-                    addList.append(zeroList[index])
-                    print(f"0. Adding {zeroList[index]} to the list")
-                    zeroUsedList[index] = True
-                    break
+                addList.append(zeroList[index])
+                print(f"0. Adding {zeroList[index]} to the list")
+                zeroUsedList[index] = True
+                break
 
     add(addList)
 

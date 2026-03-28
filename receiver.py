@@ -7,6 +7,7 @@ Last Updated: 2/22/2026
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
+import random
 import re
 from time import sleep
 
@@ -31,7 +32,19 @@ def main():
 
     options = webdriver.ChromeOptions()
     options.add_argument("--log-level=3")
+    options.add_argument("--start-maximized")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        " AppleWebKit/537.36 (KHTML, like Gecko)"
+        " Chrome/146.0.0.0 Safari/537.36"
+    )
     driver = webdriver.Chrome(options=options)
+    # driver.execute_script("""
+    # Object.defineProperty(navigator, 'webdriver', {
+    #     get: () => undefined
+    # })
+    # """)
 
     # https://stackoverflow.com/questions/60097388/scraping-problem-inspect-element-different-from-view-page-source#:~:text=The%20page%20content%20is%20probably,render%20the%20javascript%20for%20you.
 
@@ -55,7 +68,7 @@ def main():
         print(f"Checking... [{len(scraped_links) < 8} and {scraped_links == last_links}]")
 
         if (len(scraped_links) < 8) or (scraped_links == last_links):
-            sleep(10)
+            sleep(random.randint(30, 60))
             continue
 
         # print("Scraped links:")
@@ -82,7 +95,7 @@ def main():
 
         last_links = scraped_links.copy()
 
-        sleep(10)
+        sleep(random.randint(30, 60))
 
     return
 
