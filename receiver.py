@@ -120,11 +120,11 @@ def main():
             and href_value not in scraped_links:
                 scraped_links.append(href_value) # add to list of scraped links
 
-        print(f"Checking... [{len(scraped_links) < 8} and {scraped_links == last_links}]")
+        # print(f"Checking... [{len(scraped_links) < 8} and {scraped_links == last_links}]")
 
         # if the wishlist cannot represent a byte or there has been no update to the list, wait
         if (len(scraped_links) < 8) or (scraped_links == last_links):
-            sleep(random.randint(30, 50))
+            sleep(random.randint(25, 40))
             continue
 
         
@@ -142,20 +142,22 @@ def main():
 
         decodedChar = chr(char)
 
+        if decodedChar == '\0': # null character signals end of transmission
 
+            if outputMessageFile.tell() != 0 or len(writeLine) != 0: # if we received a null character and there has been transmission going on
 
-        if decodedChar == '': # null character signals end of transmission
+                print("Received null character, transmission ended")
 
-            if len(writeLine) != 0: # current output text line not empty
+                if len(writeLine) != 0: # current output text line not empty
 
-                outputMessageFile.write("".join(writeLine)) # write contents to file
-                writeLine = []
+                    outputMessageFile.write("".join(writeLine)) # write contents to file
+                    writeLine = []
 
-            break
+                break
 
         else:
 
-            print(f"Output: {decodedChar}")
+            print(f"Received: {decodedChar}")
 
             writeLine.append(decodedChar) # add decoded character to output text line
             
@@ -168,7 +170,7 @@ def main():
 
         last_links = scraped_links.copy() # copy current wishlist content to last list for checks
 
-        sleep(random.randint(30, 60)) # sleep between 30-60 seconds then continue checking wishlist
+        sleep(random.randint(25, 40)) # sleep between 30-50 seconds then continue checking wishlist
 
     
 

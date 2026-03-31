@@ -147,7 +147,7 @@ def removeAll():
             sleep(random.uniform(0.5, 1.5))         # wait a moment and repeat
 
     except NoSuchElementException:
-        print("All previous wishlist entries successfully removed.")
+        # print("All previous wishlist entries successfully removed.")
         return
 
     return
@@ -289,7 +289,7 @@ def main():
                     else: # if ok, add game and mark as used for this transmission
 
                         addList.append(zeroList[index])
-                        print(f"0. Adding {zeroList[index]} to the list")
+                        # print(f"0. Adding {zeroList[index]} to the list")
                         zeroUsedList[index] = True
                         break
 
@@ -307,7 +307,7 @@ def main():
                     else: # if ok, add game and mark as used for this transmission
 
                         addList.append(oneList[index])
-                        print(f"1. Adding {oneList[index]} to the list")
+                        # print(f"1. Adding {oneList[index]} to the list")
                         oneUsedList[index] = True
                         break
 
@@ -322,6 +322,8 @@ def main():
 
     inputMessageFile.close()
     removeAll()
+
+    print(f"Sending ending null character")
 
     # send null byte to communicate no longer transmitting
     addList = []
@@ -338,7 +340,7 @@ def main():
             else: # if ok, add game and mark as used for this transmission
 
                 addList.append(zeroList[index])
-                print(f"0. Adding {zeroList[index]} to the list")
+                # print(f"0. Adding {zeroList[index]} to the list")
                 zeroUsedList[index] = True
                 break
 
