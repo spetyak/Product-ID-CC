@@ -1,18 +1,22 @@
 """
 Author: Sean Petyak
-Last Updated: 3/28/2026
+Last Updated: 4/12/2026
 """
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
+import requests
 import random
 import re
 import sys
 from time import sleep
 
+from datetime import datetime
+
 # globals
 driver = None
+wishlistURL = None
 
 
 
@@ -106,6 +110,8 @@ def splitList(idList):
     for link in idList:
 
         match = re.search("/(\\d+)/", link) # search the string for just digits surrounded by "/"
+        if match is None:
+            continue
         productID = match.group(1)          # get the first occurence of identified digits
         encoded = encode(productID)         # encode the product ID string
 
@@ -125,13 +131,14 @@ def removeAll():
     """
 
     global driver
+    global wishlistURL
 
 
 
     # confirm on wishlist page
     if "wishlist" not in driver.current_url:
         
-        driver.get("https://store.steampowered.com/wishlist/id/jd-pidcc/") # go to wishlist page
+        driver.get(wishlistURL) # go to wishlist page
         sleep(2) # allow page to load
 
     
@@ -147,7 +154,6 @@ def removeAll():
             sleep(random.uniform(0.5, 1.5))         # wait a moment and repeat
 
     except NoSuchElementException:
-        # print("All previous wishlist entries successfully removed.")
         return
 
     return
@@ -191,28 +197,44 @@ def add(gameList):
 def main():
 
     global driver
+    global wishlistURL
 
 
 
-    if (len(sys.argv) != 2): # ensure caller uses proper calling format
+    if (len(sys.argv) != 3): # ensure caller uses proper calling format
 
         print(
             f"ERROR:\n" \
             "\tPlease call this program using the following format:\n" \
-            "\tpython sender.py <input file path>\n"
+            "\tpython sender.py <WISHLIST URL> <input file path>\n"
         )
+        exit(0)
+
+
+
+    wishlistURL = sys.argv[1]
+
+    response = requests.get(wishlistURL, timeout=3)
+    if (response.status_code >= 400) or ("https://store.steampowered.com/wishlist/id/" not in wishlistURL):
+        print(
+            f"ERROR:\n" \
+            "\tThe wishlist URL provided was not a valid link!\n"
+        )
+        exit(0)
+
+
 
     inputMessageFile = None
 
     try:
 
-        inputMessageFile = open(sys.argv[1], "r")
+        inputMessageFile = open(sys.argv[2], "r")
 
     except Exception:
 
         print(
             "ERROR:\n" \
-            f"\tThere was an error opening {sys.argv[1]}, aborting process." \
+            f"\tThere was an error opening {sys.argv[2]}, aborting process." \
             "Please ensure the file exists."
         )
         exit(0)
@@ -252,6 +274,8 @@ def main():
     #
     # ==========================================================================================
 
+    print(f"TRANSMISSION STARTED: {datetime.now()}")
+
     gameList = getGames()
     zeroList, oneList = splitList(gameList)
     addList = []
@@ -289,7 +313,6 @@ def main():
                     else: # if ok, add game and mark as used for this transmission
 
                         addList.append(zeroList[index])
-                        # print(f"0. Adding {zeroList[index]} to the list")
                         zeroUsedList[index] = True
                         break
 
@@ -307,7 +330,6 @@ def main():
                     else: # if ok, add game and mark as used for this transmission
 
                         addList.append(oneList[index])
-                        # print(f"1. Adding {oneList[index]} to the list")
                         oneUsedList[index] = True
                         break
 
@@ -325,6 +347,8 @@ def main():
 
     print(f"Sending ending null character")
 
+
+
     # send null byte to communicate no longer transmitting
     addList = []
     zeroUsedList = [False for i in range(len(zeroList))]
@@ -340,7 +364,6 @@ def main():
             else: # if ok, add game and mark as used for this transmission
 
                 addList.append(zeroList[index])
-                # print(f"0. Adding {zeroList[index]} to the list")
                 zeroUsedList[index] = True
                 break
 
@@ -348,17 +371,7 @@ def main():
 
 
 
-    print("Finished main loop actions, log out and then use ^C to end process.")
-
-    # Stay on this page until the user sends a ^C signal to this script
-    # !!! Delete this later, just for early testing. !!!
-    try: 
-        while True:
-            sleep(1)
-
-    except KeyboardInterrupt:
-        driver.quit()
-        exit(0)
+    driver.quit()
 
     return
 

@@ -1,15 +1,18 @@
 """
 Author: Sean Petyak
-Last Updated: 3/28/2026
+Last Updated: 4/12/2026
 """
 
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
+import requests
 import random
 import re
 import sys
 from time import sleep
+
+from datetime import datetime
 
 
 
@@ -54,25 +57,39 @@ def decode(productID):
 
 def main():
 
-    if (len(sys.argv) != 2): # ensure caller uses proper calling format
+    if (len(sys.argv) != 3): # ensure caller uses proper calling format
 
         print(
             f"ERROR:\n" \
             "\tPlease call this program using the following format:\n" \
-            "\tpython sender.py <output file path>\n"
+            "\tpython receiver.py <WISHLIST URL> <output file path>\n"
         )
+
+
+
+    wishlistURL = sys.argv[1]
+
+    response = requests.get(wishlistURL, timeout=3)
+    if (response.status_code >= 400) or ("https://store.steampowered.com/wishlist/id/" not in wishlistURL):
+        print(
+            f"ERROR:\n" \
+            "\tThe wishlist URL provided was not a valid link!\n"
+        )
+        exit(0)
+
+
 
     outputMessageFile = None
 
     try:
 
-        outputMessageFile = open(sys.argv[1], "w")
+        outputMessageFile = open(sys.argv[2], "w")
 
     except Exception:
 
         print(
             "ERROR:\n" \
-            f"\tThere was an error opening {sys.argv[1]}, aborting process.\n"
+            f"\tThere was an error opening {sys.argv[2]}, aborting process.\n"
         )
         exit(0)
 
@@ -97,14 +114,12 @@ def main():
 
 
 
-    # https://stackoverflow.com/questions/60097388/scraping-problem-inspect-element-different-from-view-page-source#:~:text=The%20page%20content%20is%20probably,render%20the%20javascript%20for%20you.
-
     last_links = []
     writeLine = []
 
     while True:
 
-        driver.get("https://store.steampowered.com/wishlist/id/jd-pidcc/") # Open Steam login page
+        driver.get(wishlistURL) # Open Steam login page
         sleep(10) # wait for page to fully load
 
         scraped_links = []
@@ -116,24 +131,27 @@ def main():
 
             # look for a new link that has the word "app" in its URL, signaling a Steam game
             if href_value \
-            and "app" in href_value \
-            and href_value not in scraped_links:
-                scraped_links.append(href_value) # add to list of scraped links
+            and "app" in href_value:
+                
+                match = re.search("/(\\d+)/", href_value) # search the string for just digits surrounded by "/"
+                if match is not None:
 
-        # print(f"Checking... [{len(scraped_links) < 8} and {scraped_links == last_links}]")
+                    scraped_id = match.group(1)
+
+                    if scraped_id not in scraped_links:
+                        scraped_links.append(scraped_id)     # add the first occurence of identified ID to list
 
         # if the wishlist cannot represent a byte or there has been no update to the list, wait
         if (len(scraped_links) < 8) or (scraped_links == last_links):
-            sleep(random.randint(25, 40))
+            sleep(random.randint(25, 35))
             continue
 
         
 
         readList = [] # a list of all product IDs read from the wishlist
+        readList = scraped_links.copy()
 
-        for link in scraped_links:
-            match = re.search("/(\\d+)/", link) # search the string for just digits surrounded by "/"
-            readList.append(match.group(1))     # add the first occurence of identified ID to list
+
 
         char = 0
         for i in range(8): # will always check first 8, so sender can add random cover items after
@@ -157,7 +175,7 @@ def main():
 
         else:
 
-            print(f"Received: {decodedChar}")
+            print(f"Received: \"{decodedChar}\"")
 
             writeLine.append(decodedChar) # add decoded character to output text line
             
@@ -170,9 +188,11 @@ def main():
 
         last_links = scraped_links.copy() # copy current wishlist content to last list for checks
 
-        sleep(random.randint(25, 40)) # sleep between 30-50 seconds then continue checking wishlist
+        sleep(random.randint(25, 35)) # sleep between 30-50 seconds then continue checking wishlist
 
     
+
+    print(f"TRANSMISSION ENDED: {datetime.now()}")
 
     outputMessageFile.close()
 
